@@ -33,6 +33,5 @@ while True:
   rcvfile=conn[1].recv(10485790)
   conn[0].send(rcvfile)
   
-
 s.close()
 
