@@ -1,0 +1,1 @@
+This is a simple server and client application made in using socket programming. The main idea is to understand the server-client communication using a chatting system.
