@@ -1,1 +1,1 @@
-This is a simple server and client application made in using socket programming. The main idea is to understand the server-client communication using a chatting system.
+This is a simple chat room application that allows multiple users to connect with each other and start chatting. It is made in python with the concepts of socket programming and multi threading.

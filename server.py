@@ -1,37 +1,59 @@
 import socket
+import sys
+import threading
+from utility import encodeMessage,decodeMessage
 
-s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(('localhost', 4444))
-s.listen(3)
-conn=['','']
-print('Waiting for client to connect...')
-for i in range(0,2):
- conn[i], addr=s.accept()
- print('{} client connected: {}'.format(i+1, addr[0]))
- conn[i].send(str.encode('{} clients connected'.format(i+1)))
+server=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+IP_ADDR='localhost'
+PORT=4444
+server.bind((IP_ADDR,PORT))
+server.listen(100)
+clients={} #Mapping of Client Connection with its Client Name
 
-conn[1].send(str.encode('Wait for 1 client to send data...'))
-conn[0].send(str.encode('2 Clients Connected!, Send some data: '))
-while True:
- data0= conn[0].recv(4096)
- if data0.decode('utf-8')!='TRIGGER':
-  conn[1].send(data0)
- else:
-  conn[1].send(data0)
-  data0= conn[0].recv(4096)
-  conn[1].send(data0)
-  rcvfile=conn[0].recv(10485790)
-  conn[1].send(rcvfile)
+def main():
+	print('Waitnig for clients to connect...')
+	while True:
+		conn, addr=server.accept()
+		clients[conn]=''
+		print('{} client connected: {}'.format(len(clients),addr[0]))
+		print('{} connected'.format(addr))
+		t=threading.Thread(target=newClient,args=(conn,addr,))
+		t.start()
+	server.close()
 
- data1= conn[1].recv(4096)
- if data1.decode('utf-8')!='TRIGGER':
-  conn[0].send(data1)
- else:
-  conn[0].send(data1)
-  data1= conn[1].recv(4096)
-  conn[0].send(data1)
-  rcvfile=conn[1].recv(10485790)
-  conn[0].send(rcvfile)
-  
-s.close()
+def newClient(conn, addr):
+	clientName=str(addr[0])+'.'+str(addr[1])
+	conn.send(encodeMessage('Welcome to chat room, enter you name: '))
+	clientName=decodeMessage(conn.recv(4096))
+	clients[conn]=clientName
+	broadcast(encodeMessage('{} connected'.format(clientName)),conn)
+	while True:
+		try:
+			msg=conn.recv(4096)
+			if msg:
+				msg=clientName+': '+decodeMessage(msg)
+				print(msg)
+				broadcast(encodeMessage(msg),conn)
+			else:
+				removeClient(conn)
+				break
+		except:
+			continue
 
+def broadcast(msg,conn=None):
+	for client in clients:
+		if(client==conn):
+			continue
+		try:
+			client.send(msg)
+		except:
+			removeClient(client)
+
+def removeClient(curClient):
+	if curClient in clients:
+		broadcast(encodeMessage('{} disconnected'.format(clients[curClient])),curClient)
+		clients.pop(curClient)
+
+
+if __name__ == '__main__':
+	main()
